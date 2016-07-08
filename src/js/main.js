@@ -8,6 +8,8 @@ require.config({
     }
 });
 
-require(['jquery'], function($) {
-    $("#main").append($('<input type="button" value="alertModel">'));
+require(['jquery', 'window'], function($, w) {
+    $("#alertBtn").on("click", function () {
+        new w.Window().alert("alert!");
+    })
 });
