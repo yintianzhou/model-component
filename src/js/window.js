@@ -1,7 +1,7 @@
 /**
  * Created by Administrator on 2016/7/8 0008.
  */
-define(['jquery'], function($) {
+define(['jquery', 'widget'], function($, widget) {
     function Window() {
         this.config = {
             width: 500,
@@ -12,88 +12,71 @@ define(['jquery'], function($) {
             handler4AlertBtn: null,
             handler4CloseBtn: null,
             hasCloseBtn: false,
-            hasMask: true
+            hasMask: true,
         };
-
-        //组件的事件对象
-        this.handlers = {};
     }
     
-    Window.prototype = {
-        //绑定事件
-        on: function(type, handler) {
-            if(typeof this.handlers[type] == "undefined") {
-                this.handlers[type] = [];
-            }
-            this.handlers[type].push(handler);
-
-            return this;
-        },
-        //触发事件
-        fire: function(type, data) {
-            if(this.handlers[type] instanceof Array) {
-                var handlers = this.handlers[type];
-                for(var i = 0, len = handlers.length; i<len; i++) {
-                    handlers[i](data);
-                }
-            }
-        },
-        //弹窗方法
-        alert: function (config) {
-            var CFG = $.extend(this.config, config),
-                that = this;
-
-            var alertBox = $(
+    Window.prototype = $.extend({}, new widget.Widget(), {
+        renderUI: function () {
+            this.boundingBox = $(
                 '<div class="alert-box">' +
-                    '<div class="alert-header">' + CFG.title + '</div>' +
-                    '<div class="alert-body">' + CFG.content + '</div>' +
-                    '<div class="alert-footer"><input class="alert-btn" type="button" value="确定"/></div>' +
+                '<div class="alert-header">' + this.config.title + '</div>' +
+                '<div class="alert-body">' + this.config.content + '</div>' +
+                '<div class="alert-footer"><input class="alert-btn" type="button" value="确定"/></div>' +
                 '</div>'
             );
-            alertBox.appendTo("body");
 
-            var btn = alertBox.find(".alert-footer input"),
-                mask = null;
-
-            if(CFG.hasMask){
-                mask = $('<div class="window-mask"></div>');
-                mask.appendTo("body");
+            if(this.config.hasMask){
+                this._mask = $('<div class="window-mask"></div>');
+                this._mask.appendTo("body");
             }
+
+            if(this.config.hasCloseBtn) {
+                this._closeBtn = $('<span class="alert-closeBtn">X</span>');
+                this._closeBtn.appendTo(this.boundingBox);
+            }
+
+
+        },
+        bindUI: function() {
+            var btn = this.boundingBox.find(".alert-footer input"),
+                that = this;
             btn.on("click", function() {
-                alertBox.remove();
-                mask && mask.remove();
+                that.destroy();
                 that.fire("alert");
             });
 
-            alertBox.css({
-                width: this.config.width + "px",
-                height: this.config.height + "px",
-                left: (this.config.x || (window.innerWidth - this.config.width)/2) + "px",
-                top: (this.config.y || (window.innerHeight - this.config.height)/2) + "px"
+            this._closeBtn.on("click", function(){
+                that.destroy();
+                that.fire("close");
             });
 
-            if(CFG.hasCloseBtn) {
-                var closeBtn = $('<span class="alert-closeBtn">X</span>');
-                closeBtn.appendTo(alertBox);
-                closeBtn.on("click", function() {
-                    alertBox.remove();
-                    mask && mask.remove();
-                    that.fire("close");
-                });
+            if(this.config.handler4AlertBtn) {
+                this.on("alert", this.config.handler4AlertBtn);
             }
+            if(this.config.handler4CloseBtn) {
+                this.on("close", this.config.handler4CloseBtn);
+            }
+
+            window.onresize = function() {
+                that.position();
+            }
+        },
+        syncUI: function () {
+            this.position();
 
             //换肤功能
-            if(CFG.skinClassName) {
-                alertBox.addClass(CFG.skinClassName);
+            if(this.config.skinClassName) {
+                this.boundingBox.addClass(CFG.skinClassName);
             }
-
-            if(CFG.handler4AlertBtn) {
-                this.on("alert", CFG.handler4AlertBtn);
-            }
-            if(CFG.handler4CloseBtn) {
-                this.on("close", CFG.handler4CloseBtn);
-            }
-
+        },
+        destructor: function () {
+            this._mask && this._mask.remove();
+        },
+        //弹窗方法
+        alert: function (config) {
+            this.config = $.extend(this.config, config);
+            this.render();
             return this;
         },
         confirm: function () {
@@ -101,8 +84,16 @@ define(['jquery'], function($) {
         },
         prompt: function () {
             
+        },
+        position: function () {
+            this.boundingBox.css({
+                width: this.config.width + "px",
+                height: this.config.height + "px",
+                left: (this.config.x || (window.innerWidth - this.config.width)/2) + "px",
+                top: (this.config.y || (window.innerHeight - this.config.height)/2) + "px"
+            });
         }
-    };
+    });
 
     return {
         Window: Window
