@@ -10,19 +10,27 @@ require.config({
 
 require(['jquery', 'window'], function($, w) {
     $("#alertBtn").on("click", function () {
-        new w.Window().alert({
+        var win = new w.Window();
+        win.alert({
             width: 300,
             height: 150,
             y: 50,
             title: "提示",
             content: "welcome",
+            hasCloseBtn: true,
             handler4AlertBtn: function() {
-                alert("click");
+                alert("alert1 handler");
             },
             handler4CloseBtn: function () {
-                alert("close");
-            },
-            hasCloseBtn: true
+                alert("close1 handler");
+            }
         });
-    })
+        win.on("alert", function() {
+            alert("alert2 handler");
+        });
+
+        win.on("close", function() {
+            alert("close2 handler");
+        });
+    });
 });
